@@ -41,7 +41,7 @@ jobs:
       # (वैकल्पिक) आउटपुट इमेज को आर्टिफैक्ट के रूप में सेव करें
       - name: Upload output image
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: quote-image-${{ github.run_id }}
           path: output.jpg
