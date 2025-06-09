@@ -6,7 +6,7 @@ on:
     - cron: '30 6 * * *'    # 12:00 PM IST (6:30 UTC)
     - cron: '30 10 * * *'   # 4:00 PM IST (10:30 UTC)
     - cron: '30 14 * * *'   # 8:00 PM IST (14:30 UTC)
-    - cron: '13 18 * * *'    # 12:00 AM IST (18:00 UTC - अगले दिन की मध्यरात्रि)
+    - cron: '39 19 * * *'     # 12:00 AM IST (18:00 UTC - अगले दिन की मध्यरात्रि)
   workflow_dispatch:       # मैनुअली चलाने का विकल्प
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
           FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
           PAGE_ID: ${{ secrets.PAGE_ID }}
         run: |
-          python main.py
+          python autopostwihtimg.py
 
       # (वैकल्पिक) आउटपुट इमेज को आर्टिफैक्ट के रूप में सेव करें
       - name: Upload output image
