@@ -1,3 +1,4 @@
+import os
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageStat, ImageFilter
 import textwrap
@@ -6,17 +7,17 @@ import random
 import facebook  # <-- Facebook SDK import
 
 # ====== CONFIGURATION ======
-PEXELS_API_KEY = "not4T1lHNY3AvD6tMMkXYYERO5Cy5WJhJy1Rjj6ohGZpHuDvowic3Ypm"
-FONT_PATH = r"C:\Users\ADMIN\Desktop\WHATSAPP\facebook\autopost\SpecialElite.ttf"
-OUTPUT_PATH = r"C:\Users\ADMIN\Desktop\WHATSAPP\facebook\autopost\output.jpg"
+PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
+FONT_PATH = "SpecialElite.ttf"  # GitHub Actions me relative path use karein
+OUTPUT_PATH = "output.jpg"
 
 # Facebook config
-user_access_token = 'EAAJi2I6kiwcBO9kz5zrtUaGOCmwSbEISSVGZCQ0f2ZCGjQJKXBo9iuxi6NmtOES4jcmjcRvxLHxTPXge2sZAg73ZBR3d2GygXSlmCbM1NPLpmhTtspWVwIUPF0ZBeozFajxy7L2Uo1ao7dupZADUcS1JqUpxP8OwjZCX6wotTqunY0XGPq48HFD369RyMKLhmUlyJCQbp2GUix2lyGZB'
-page_id = '114279850214785'
+user_access_token = os.getenv("FB_ACCESS_TOKEN")
+page_id = os.getenv("PAGE_ID")
 
 def get_random_quote():
     try:
-        response = requests.get("https://api.quotable.io/random", verify=False)
+        response = requests.get("https://api.quotable.io/random")
         if response.status_code == 200:
             data = response.json()
             return f'"{data["content"]}"\n- {data["author"]}'
