@@ -1,0 +1,47 @@
+name: Daily Facebook Posts
+on:
+  schedule:
+    # भारतीय समय (IST) के अनुसार शेड्यूल (UTC में कन्वर्ट किया गया)
+    - cron: '30 2 * * *'    # 8:00 AM IST (2:30 UTC)
+    - cron: '30 6 * * *'    # 12:00 PM IST (6:30 UTC)
+    - cron: '30 10 * * *'   # 4:00 PM IST (10:30 UTC)
+    - cron: '30 14 * * *'   # 8:00 PM IST (14:30 UTC)
+    - cron: '0 18 * * *'    # 12:00 AM IST (18:00 UTC - अगले दिन की मध्यरात्रि)
+  workflow_dispatch:       # मैनुअली चलाने का विकल्प
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # स्टेप 1: रिपॉजिटरी को चेकआउट करें
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # स्टेप 2: Python 3.9 सेटअप करें
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # स्टेप 3: आवश्यक लाइब्रेरीज इंस्टॉल करें
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      # स्टेप 4: पायथन स्क्रिप्ट चलाएं (API Keys GitHub Secrets से लें)
+      - name: Run Python script
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+        run: |
+          python main.py
+
+      # (वैकल्पिक) आउटपुट इमेज को आर्टिफैक्ट के रूप में सेव करें
+      - name: Upload output image
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: quote-image-${{ github.run_id }}
+          path: output.jpg
