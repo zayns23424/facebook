@@ -17,7 +17,7 @@ page_id = os.getenv("PAGE_ID")
 
 def get_random_quote():
     try:
-        response = requests.get("https://api.quotable.io/random")
+        response = requests.get("https://api.quotable.io/random",verify=False)
         if response.status_code == 200:
             data = response.json()
             return f'"{data["content"]}"\n- {data["author"]}'
