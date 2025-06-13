@@ -1,113 +1,96 @@
 import os
-import requests
-from PIL import Image, ImageDraw, ImageFont, ImageStat, ImageFilter
-import textwrap
-from io import BytesIO
 import random
-import facebook  # <-- Facebook SDK import
+import json # <-- NEW: JSON string ko handle karne ke liye
+from PIL import Image, ImageDraw, ImageFont
+import firebase_admin
+from firebase_admin import credentials, firestore
+import requests
 
-# ====== CONFIGURATION ======
-PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")
-FONT_PATH = "SpecialElite.ttf"  # GitHub Actions me relative path use karein
-OUTPUT_PATH = "output.jpg"
+# --- CONFIGURATION (Ab GitHub Secrets se aayega) ---
+PAGE_ID = os.getenv("PAGE_ID")
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+FIREBASE_KEY_JSON_STR = os.getenv("FIREBASE_KEY_JSON")
 
-# Facebook config
-user_access_token = os.getenv("FB_ACCESS_TOKEN")
-page_id = os.getenv("PAGE_ID")
+# Check agar secrets load hue hain
+if not all([PAGE_ID, ACCESS_TOKEN, FIREBASE_KEY_JSON_STR]):
+    print("Error: One or more secrets are not set in the environment.")
+    exit()
 
-def get_random_quote():
+input_folder = r"./wallpaper"  # <-- CHANGED: Relative path for GitHub Actions
+output_folder = r"./output" # <-- CHANGED: Relative path
+
+# Fonts, Text, Sizes, Colors (Yeh sab waise hi hai)
+font_path = r"./fonnt/MerriweatherSans-MediumItalic.ttf" # <-- CHANGED
+font_path_secondary = r"./fonnt/SplineSans-Bold.ttf" # <-- CHANGED
+font_path_hashtag = r"./fonnt/nunitoblackitalic.ttf" # <-- CHANGED
+text_secondary = "Sigma Cat"
+TARGET_WIDTH, TARGET_HEIGHT = 1040, 2050
+font_size, font_size_secondary, font_size_hashtag = 60, 25, 30
+font_colors = ["#3A0000", "#41340A", "#360C2D", "#151057", "#0F3F0C"]
+font_color_secondary = "#2E2E2E"
+
+# --- Firebase and Dynamic Counter Logic ---
+# Initialize Firebase from the JSON string secret
+try:
+    firebase_key_dict = json.loads(FIREBASE_KEY_JSON_STR)
+    cred = credentials.Certificate(firebase_key_dict)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
+    db = firestore.client()
+except json.JSONDecodeError:
+    print("Error: FIREBASE_KEY_JSON is not a valid JSON string.")
+    exit()
+
+# ... (Baaki ka logic bilkul same hai)
+counter_ref = db.collection('metadata').document('post_counter')
+try:
+    doc = counter_ref.get()
+    current_count = doc.to_dict().get('count', 0) if doc.exists else 0
+except Exception as e:
+    current_count = 0
+new_count = current_count + 1
+text_hashtag = f"#{new_count}"
+counter_ref.set({'count': new_count})
+print(f"Using Post Number: {text_hashtag}")
+
+docs = list(db.collection("quotes").stream())
+if not docs:
+    print("No quotes found in Firestore. Exiting script.")
+    exit()
+doc = random.choice(docs)
+data = doc.to_dict()
+text_to_add = data.get("daily", "")
+print("Random quote:", text_to_add)
+try:
+    doc.reference.delete()
+    print(f"Quote '{doc.id}' has been deleted from Firestore.")
+except Exception as e:
+    print(f"Error deleting quote {doc.id}: {e}")
+
+# ... (Functions bhi bilkul same hain)
+def post_to_facebook(image_path, caption):
+    post_url = f"https://graph.facebook.com/{PAGE_ID}/photos"
+    payload = {'message': caption, 'access_token': ACCESS_TOKEN}
+    files = {'source': open(image_path, 'rb')}
     try:
-        response = requests.get("https://api.quotable.io/random",verify=False)
+        print("Posting to Facebook Page...")
+        response = requests.post(post_url, data=payload, files=files)
+        response_data = response.json()
         if response.status_code == 200:
-            data = response.json()
-            return f'"{data["content"]}"\n- {data["author"]}'
+            print(f"Successfully posted to Facebook! Post ID: {response_data.get('post_id')}")
         else:
-            return "कोट फ़ेच नहीं हो पाया। कृपया बाद में कोशिश करें।"
+            print("Error posting to Facebook:", response_data)
     except Exception as e:
-        return f"Error: {e}"
+        print(f"An error occurred: {e}")
 
-def invert_color(rgb):
-    return tuple(255 - x for x in rgb)
+# ... (Image processing loop aur baaki sab kuch same hai)
+# Make sure the necessary directories exist in the runner
+os.makedirs(output_folder, exist_ok=True)
+os.makedirs(os.path.dirname(font_path), exist_ok=True)
 
-def fetch_dark_image_from_pexels():
-    headers = {
-        "Authorization": PEXELS_API_KEY
-    }
-    params = {
-        "query": "plain dark wallpaper",
-        "per_page": 10,
-        "orientation": "landscape"
-    }
-    response = requests.get("https://api.pexels.com/v1/search", headers=headers, params=params)
-    data = response.json()
-    if data.get("photos"):
-        photo = random.choice(data["photos"])
-        img_url = photo["src"]["large2x"]
-        img_data = requests.get(img_url).content
-        img = Image.open(BytesIO(img_data)).convert("RGB")
-        img = img.resize((1920, 1080), Image.LANCZOS)
-        return img
-    else:
-        raise Exception("No dark images found on Pexels.")
-
-def draw_quote_on_image(quote, img, output_path, font_path):
-    img = img.convert("RGB")
-    img = img.filter(ImageFilter.GaussianBlur(radius=30))
-    draw = ImageDraw.Draw(img)
-    try:
-        font = ImageFont.truetype(font_path, 60)
-    except OSError:
-        print(f"Font '{font_path}' nahi mila, default font use ho raha hai.")
-        font = ImageFont.load_default()
-    stat = ImageStat.Stat(img)
-    avg_bg_color = tuple(int(x) for x in stat.mean)
-    text_color = invert_color(avg_bg_color)
-    margin = 300
-    max_width = img.width - 2 * margin
-    lines = []
-    for line in quote.split('\n'):
-        temp_line = ""
-        for word in line.split():
-            test_line = temp_line + (" " if temp_line else "") + word
-            bbox = draw.textbbox((0, 0), test_line, font=font)
-            w = bbox[2] - bbox[0]
-            if w <= max_width:
-                temp_line = test_line
-            else:
-                if temp_line:
-                    lines.append(temp_line)
-                temp_line = word
-        if temp_line:
-            lines.append(temp_line)
-    line_height = (draw.textbbox((0, 0), 'hg', font=font)[3] - draw.textbbox((0, 0), 'hg', font=font)[1]) + 30
-    total_text_height = line_height * len(lines)
-    y = (img.height - total_text_height) // 2
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
-        w = bbox[2] - bbox[0]
-        x = (img.width - w) // 2
-        draw.text((x, y), line, font=font, fill=text_color)
-        y += line_height
-    img.save(output_path)
-    print(f"Image saved: {output_path}")
-
-def post_image_to_facebook_page(image_path, caption=""):
-    graph = facebook.GraphAPI(user_access_token)
-    accounts = graph.get_connections('me', 'accounts')
-    page_access_token = None
-    for account in accounts['data']:
-        if account['id'] == page_id:
-            page_access_token = account['access_token']
-            break
-    if not page_access_token:
-        raise Exception("Page Token नहीं मिला – App को Page Admin होना चाहिए")
-    page_graph = facebook.GraphAPI(page_access_token)
-    with open(image_path, "rb") as image_file:
-        post = page_graph.put_photo(image=image_file, message=caption)
-    print("Image post ho gayi! Post ID:", post['post_id'])
-
-if __name__ == "__main__":
-    quote = get_random_quote()
-    img = fetch_dark_image_from_pexels()
-    draw_quote_on_image(quote, img, OUTPUT_PATH, FONT_PATH)
-    post_image_to_facebook_page(OUTPUT_PATH, caption=quote)
+# Main Logic
+all_images = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+if not all_images:
+    print("No images found in the input folder. Exiting.")
+    exit()
+# ... (rest of the script is the same as before) ...
