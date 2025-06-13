@@ -1,19 +1,19 @@
 import os
 import random
-import json # <-- JSON ke liye import
+import json
 from PIL import Image, ImageDraw, ImageFont
 import firebase_admin
 from firebase_admin import credentials, firestore
 import requests
 
-# --- CONFIGURATION (GitHub Secrets se aayega) ---
+# --- CONFIGURATION (Reads from GitHub Secrets) ---
 PAGE_ID = os.getenv("PAGE_ID")
-USER_ACCESS_TOKEN = os.getenv("USER_ACCESS_TOKEN")
+FB_ACCESS_TOKEN = os.getenv("FB_ACCESS_TOKEN") # <-- CORRECTED
 FIREBASE_KEY_JSON_STR = os.getenv("FIREBASE_KEY_JSON")
 
-# Check agar secrets load hue hain
-if not all([PAGE_ID, USER_ACCESS_TOKEN, FIREBASE_KEY_JSON_STR]):
-    print("Error: One or more secrets (PAGE_ID, USER_ACCESS_TOKEN, FIREBASE_KEY_JSON) are not set.")
+# Check if secrets were loaded correctly
+if not all([PAGE_ID, FB_ACCESS_TOKEN, FIREBASE_KEY_JSON_STR]):
+    print("Error: One or more secrets (PAGE_ID, FB_ACCESS_TOKEN, FIREBASE_KEY_JSON) are not set.")
     exit()
 
 # --- Use relative paths for GitHub Actions ---
@@ -30,7 +30,7 @@ font_size, font_size_secondary, font_size_hashtag = 60, 25, 30
 font_colors = ["#3A0000", "#41340A", "#360C2D", "#151057", "#0F3F0C"]
 font_color_secondary = "#2E2E2E"
 
-# --- Firebase Initialization from Secret ---
+# --- Initialize Firebase ---
 try:
     firebase_key_dict = json.loads(FIREBASE_KEY_JSON_STR)
     cred = credentials.Certificate(firebase_key_dict)
@@ -41,7 +41,7 @@ except json.JSONDecodeError:
     print("Error: FIREBASE_KEY_JSON secret is not a valid JSON string.")
     exit()
 
-# --- Functions and Main Logic (The rest of your script) ---
+# --- Functions and Main Logic ---
 
 counter_ref = db.collection('metadata').document('post_counter')
 try:
@@ -102,7 +102,7 @@ def post_to_facebook(image_path, caption):
     page_access_token = None
     print("Fetching Page Access Token...")
     accounts_url = f"https://graph.facebook.com/me/accounts"
-    params = {'access_token': USER_ACCESS_TOKEN}
+    params = {'access_token': FB_ACCESS_TOKEN} # <-- CORRECTED
     try:
         response = requests.get(accounts_url, params=params)
         accounts_data = response.json()
@@ -143,7 +143,7 @@ except FileNotFoundError as e:
     exit()
 
 # --- Main Processing Loop ---
-os.makedirs(output_folder, exist_ok=True) # Create output folder if it doesn't exist
+os.makedirs(output_folder, exist_ok=True)
 all_images = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 if not all_images:
     print("No images found in the input folder. Exiting.")
