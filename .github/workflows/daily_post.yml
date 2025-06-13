@@ -1,47 +1,31 @@
-name: Daily Facebook Posts
+name: Daily Facebook Post
+
 on:
+  workflow_dispatch: # Isse aap manually bhi run kar sakte hain
   schedule:
-    # भारतीय समय (IST) के अनुसार शेड्यूल (UTC में कन्वर्ट किया गया)
-    - cron: '30 2 * * *'    # 8:00 AM IST (2:30 UTC)
-    - cron: '30 6 * * *'    # 12:00 PM IST (6:30 UTC)
-    - cron: '30 10 * * *'   # 4:00 PM IST (10:30 UTC)
-    - cron: '30 14 * * *'   # 8:00 PM IST (14:30 UTC)
-    - cron: '53 19 * * *'     # 12:00 AM IST (18:00 UTC - अगले दिन की मध्यरात्रि)
-  workflow_dispatch:       # मैनुअली चलाने का विकल्प
+    - cron: '30 10 * * *' # Roz shaam 4 baje IST (10:30 UTC)
 
 jobs:
-  run-script:
+  build-and-post:
     runs-on: ubuntu-latest
-    
+
     steps:
-      # स्टेप 1: रिपॉजिटरी को चेकआउट करें
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # स्टेप 2: Python 3.9 सेटअप करें
-      - name: Set up Python 3.9
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
-      # स्टेप 3: आवश्यक लाइब्रेरीज इंस्टॉल करें
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          pip install requests Pillow firebase-admin
 
-      # स्टेप 4: पायथन स्क्रिप्ट चलाएं (API Keys GitHub Secrets से लें)
-      - name: Run Python script
+      - name: Run the script
         env:
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           PAGE_ID: ${{ secrets.PAGE_ID }}
-        run: |
-          python autopostwihtimg.py
-
-      # (वैकल्पिक) आउटपुट इमेज को आर्टिफैक्ट के रूप में सेव करें
-      - name: Upload output image
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quote-image-${{ github.run_id }}
-          path: output.jpg
+          FIREBASE_KEY_JSON: ${{ secrets.FIREBASE_KEY_JSON }}
+        run: python main_script.py # Yahan apni python file ka naam daalein
