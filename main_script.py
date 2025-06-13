@@ -8,7 +8,7 @@ import requests
 
 # --- CONFIGURATION (Ab GitHub Secrets se aayega) ---
 PAGE_ID = os.getenv("PAGE_ID")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+ACCESS_TOKEN = os.getenv("FB_ACCESS_TOKEN")
 FIREBASE_KEY_JSON_STR = os.getenv("FIREBASE_KEY_JSON")
 
 # Check agar secrets load hue hain
