@@ -25,7 +25,7 @@ jobs:
 
       - name: Run the script
         env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
           PAGE_ID: ${{ secrets.PAGE_ID }}
           FIREBASE_KEY_JSON: ${{ secrets.FIREBASE_KEY_JSON }}
         run: python main_script.py # Yahan apni python file ka naam daalein
