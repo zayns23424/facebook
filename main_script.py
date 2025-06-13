@@ -8,7 +8,7 @@ import requests
 
 # --- CONFIGURATION (Reads from GitHub Secrets) ---
 PAGE_ID = os.getenv("PAGE_ID")
-FB_ACCESS_TOKEN = os.getenv("FB_ACCESS_TOKEN") # <-- CORRECTED
+FB_ACCESS_TOKEN = os.getenv("FB_ACCESS_TOKEN")
 FIREBASE_KEY_JSON_STR = os.getenv("FIREBASE_KEY_JSON")
 
 # Check if secrets were loaded correctly
@@ -102,7 +102,7 @@ def post_to_facebook(image_path, caption):
     page_access_token = None
     print("Fetching Page Access Token...")
     accounts_url = f"https://graph.facebook.com/me/accounts"
-    params = {'access_token': FB_ACCESS_TOKEN} # <-- CORRECTED
+    params = {'access_token': FB_ACCESS_TOKEN}
     try:
         response = requests.get(accounts_url, params=params)
         accounts_data = response.json()
@@ -181,8 +181,9 @@ try:
     processed_img.save(output_path)
     print(f"Processed and saved: {output_path}")
 
-    post_caption = f"{text_hashtag}\n\n{text_to_add}\n\n{text_secondary}"
-    post_to_facebook(image_path=output_path, caption=post_caption)
+    # --- CHANGED HERE ---
+    # Caption/Title ko khaali bhejein taaki sirf image post ho
+    post_to_facebook(image_path=output_path, caption="")
 
 except Exception as e: 
     print(f"An error occurred during image processing: {e}")
