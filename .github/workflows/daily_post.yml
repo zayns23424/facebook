@@ -1,7 +1,7 @@
 name: Daily Facebook Post
 
 on:
-  workflow_dispatch: # इसे आप मैन्युअल रूप से भी चला सकते हैं
+  workflow_dispatch: # Isse aap manually bhi run kar sakte hain
   schedule:
     # हर 3 दिन में सुबह 10:00 बजे (UTC) चलेगा।
     # UTC समय का उपयोग किया जाता है GitHub Actions में। यदि आपका सर्वर किसी भिन्न टाइमज़ोन में है,
@@ -9,7 +9,7 @@ on:
     # उदाहरण: यदि आप IST (UTC+5:30) में हैं, तो 10 AM IST = 4:30 AM UTC
     # तो cron: '30 4 */3 * *' होगा।
     # कृपया अपने स्थानीय समय के अनुसार UTC में इसे समायोजित करें।
-    - cron: '0 10 */3 * *' # हर 3 दिन में सुबह 10:00 बजे UTC
+    - cron: '0 10 */3 * *' # <-- CHANGED: हर 3 दिन में सुबह 10:00 बजे UTC
 
 jobs:
   build-and-post:
@@ -27,16 +27,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Cloudinary SDK को भी इंस्टॉल करें
-          pip install requests Pillow firebase-admin cloudinary
+          pip install requests Pillow firebase-admin cloudinary # Cloudinary SDK भी इंस्टॉल करें
 
       - name: Run the script
         env:
           PAGE_ID: ${{ secrets.PAGE_ID }}
           FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
           FIREBASE_KEY_JSON: ${{ secrets.FIREBASE_KEY_JSON }}
-          # Cloudinary Secrets को भी जोड़ें
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-        run: python main_script.py # सुनिश्चित करें कि आपकी मुख्य स्क्रिप्ट का नाम यही है
+        run: python main_script.py
